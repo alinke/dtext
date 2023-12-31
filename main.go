@@ -20,31 +20,6 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-func convertImageToSurface(img image.Image) (*sdl.Surface, error) {
-	bounds := img.Bounds()
-	width, height := bounds.Dx(), bounds.Dy()
-
-	surface, err := sdl.CreateRGBSurface(0, int32(width), int32(height), 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF)
-	if err != nil {
-		return nil, err
-	}
-
-	pixels := surface.Pixels()
-
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			index := (y*width + x) * 4
-			pixels[index] = uint8(r >> 8)
-			pixels[index+1] = uint8(g >> 8)
-			pixels[index+2] = uint8(b >> 8)
-			pixels[index+3] = uint8(a >> 8)
-		}
-	}
-
-	return surface, nil
-}
-
 var (
 	topMargin    = 40.0
 	bottomMargin = 40.0
@@ -405,6 +380,31 @@ func displayImageWithGsho(imagePath string, sleepDuration_ time.Duration) {
 		fmt.Println("Error killing command:", err)
 		return
 	}
+}
+
+func convertImageToSurface(img image.Image) (*sdl.Surface, error) {
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+
+	surface, err := sdl.CreateRGBSurface(0, int32(width), int32(height), 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF)
+	if err != nil {
+		return nil, err
+	}
+
+	pixels := surface.Pixels()
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			index := (y*width + x) * 4
+			pixels[index] = uint8(r >> 8)
+			pixels[index+1] = uint8(g >> 8)
+			pixels[index+2] = uint8(b >> 8)
+			pixels[index+3] = uint8(a >> 8)
+		}
+	}
+
+	return surface, nil
 }
 
 func resizeImage(img image.Image, width, height int) image.Image {
