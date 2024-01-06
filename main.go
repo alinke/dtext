@@ -39,7 +39,7 @@ func main() {
 	}
 
 	homeDir = currentUser.HomeDir //so we don't need to hard code gshow
-	//var sleepDuration time.Duration = 2 * time.Second
+	var sleepDuration time.Duration = 2 * time.Second
 
 	// Define command line flags
 	var (
@@ -113,7 +113,7 @@ func main() {
 	// Create a new drawing context
 	dc := gg.NewContextForImage(bgImage)
 
-	if BarOverlay {
+	if BarOverlay { //typically to overlay high scores or achievements text on the original game marquee
 
 		// Get the size of the existing image
 		width := dc.Width()
@@ -122,13 +122,6 @@ func main() {
 		// Define the size of the black bar
 
 		barHeight := int(float64(height) * 0.10) //10% of the overall height
-
-		// Set the color for the black bar
-		//dc.SetColor(color.Black)
-
-		// Draw the black bar at the bottom
-		//dc.DrawRectangle(0, float64(height-barHeight), float64(width), float64(barHeight))
-		//dc.Fill()
 
 		// now's let's add the text
 
@@ -165,52 +158,6 @@ func main() {
 
 		// Draw the text with horizontal centering
 		dc.DrawStringAnchored(text, textX+textWidth/2, textY, 0.5, 0.5) // Center the text both horizontally and vertically
-		/*
-			// Set the font face
-			dc.SetFontFace(fontFace)
-
-			// Set the color for the text (white in this case)
-			dc.SetColor(color.White)
-
-			// Calculate the total width of the text with spacing
-			textWidth, _ := dc.MeasureString(text)
-			totalWidth := textWidth + float64(len(text)-1)*10.0 // Assuming a fixed letter spacing of 10.0
-
-			// Calculate the starting X position to center the text in the bottom bar
-			textX := (float64(width) - totalWidth) / 2.0
-
-			// Calculate the Y position to center the text in the bottom bar with a margin
-			textY := float64(height-barHeight) + (float64(barHeight)-maxFontSize)/2.0 + maxFontSize/2.0 - maxFontSize*0.1
-
-			// Draw the entire string with fixed letter spacing
-			dc.DrawStringAnchored(text, textX+totalWidth/2, textY, 0.5, 0.5) // Adjust the anchoring as per your preference
-		*/
-		/*
-			// Set the position for the text
-			textWidth, textHeight := dc.MeasureString(text)
-			textX := (float64(width) - textWidth) / 2.0
-
-			// Define a fixed letter spacing
-			letterSpacing := 10.0 // Adjust this value to your preference
-
-			// Calculate positions for each character based on fixed letter spacing
-			charPositions := make([]gg.Point, len(text))
-			for i, char := range text {
-				charWidth, _ := dc.MeasureString(string(char))
-				charPositions[i] = gg.Point{X: textX, Y: float64(height-barHeight) + (float64(barHeight)-textHeight)/2.0 + textHeight/2.0 - textHeight*0.1}
-				textX += charWidth + letterSpacing
-			}
-
-			// Draw the entire string with fixed letter spacing
-			dc.DrawStringAnchored(text, charPositions[0].X, charPositions[0].Y, 0.5, 0.5)
-		*/
-
-		// Draw each character one by one, adjusting the X position
-		//for _, char := range text {
-		//	charWidth, _ := dc.MeasureString(string(char))
-		//	dc.DrawStringAnchored(string(char), textX, textY, 0.5, 0.5)
-		//	textX += charWidth
-		//}
 
 	} else {
 
@@ -262,88 +209,88 @@ func main() {
 		}
 	}
 
-	//OK, our image is done, let's now display it
+	// ****** OK, our image is done, let's now display it *****
 
-	// Convert gg.Context image to SDL surface
-	surface, err := convertImageToSurface(dc.Image())
-	if err != nil {
-		fmt.Println("Error converting image to surface:", err)
-		return
-	}
+	if UseGsho {
+		fmt.Printf("Image saved to %s\n", outputPath)
+		saveImage(outputPath, dc.Image())
+		//let's add a pause here from the time we save the image to the time we open it
+		time.Sleep(200 * time.Millisecond)
+		displayImageWithGsho(outputPath, sleepDuration)
+	} else { //no gsho flag so let's use SDL
 
-	// Initialize SDL
-	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
-		fmt.Println("Error initializing SDL:", err)
-		return
-	}
-	defer sdl.Quit()
+		// Convert gg.Context image to SDL surface
+		surface, err := convertImageToSurface(dc.Image())
+		if err != nil {
+			fmt.Println("Error converting image to surface:", err)
+			return
+		}
 
-	// Use the width and height of the loaded image
-	windowWidth := int32(dc.Width())
-	windowHeight := int32(dc.Height())
+		// Initialize SDL
+		if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+			fmt.Println("Error initializing SDL:", err)
+			return
+		}
+		defer sdl.Quit()
 
-	// Create window
-	window, err := sdl.CreateWindow("SDL Image Display", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.WINDOW_SHOWN)
-	if err != nil {
-		fmt.Println("Error creating window:", err)
-		return
-	}
-	defer window.Destroy()
+		// Use the width and height of the loaded image
+		windowWidth := int32(dc.Width())
+		windowHeight := int32(dc.Height())
 
-	// Create renderer
-	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	if err != nil {
-		fmt.Println("Error creating renderer:", err)
-		return
-	}
-	defer renderer.Destroy()
+		// Create window
+		window, err := sdl.CreateWindow("SDL Image Display", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.WINDOW_SHOWN)
+		if err != nil {
+			fmt.Println("Error creating window:", err)
+			return
+		}
+		defer window.Destroy()
 
-	// Create texture from surface
-	texture, err := renderer.CreateTextureFromSurface(surface)
-	if err != nil {
-		fmt.Println("Error creating texture:", err)
-		return
-	}
-	defer texture.Destroy()
+		// Create renderer
+		renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+		if err != nil {
+			fmt.Println("Error creating renderer:", err)
+			return
+		}
+		defer renderer.Destroy()
 
-	// Clear the renderer
-	renderer.Clear()
+		// Create texture from surface
+		texture, err := renderer.CreateTextureFromSurface(surface)
+		if err != nil {
+			fmt.Println("Error creating texture:", err)
+			return
+		}
+		defer texture.Destroy()
 
-	// Render the texture
-	renderer.Copy(texture, nil, nil)
+		// Clear the renderer
+		renderer.Clear()
 
-	// Update the screen
-	renderer.Present()
+		// Render the texture
+		renderer.Copy(texture, nil, nil)
 
-	// Wait for the specified duration to see the window
-	if timeout > 0 { //TO DO timeout not acctually display the window (at least on the mac)
-		timeoutMillis := uint32(timeout) * 1000
-		sdl.Delay(timeoutMillis) // Delay for the specified duration
-		sdl.Quit()               // Post a quit event to close the window
-	} else {
-		// Handle events to keep the window open
-		for {
-			event := sdl.PollEvent()
-			switch event := event.(type) {
-			case *sdl.QuitEvent:
-				return
-			case *sdl.KeyboardEvent:
-				if event.Keysym.Sym == sdl.K_ESCAPE {
+		// Update the screen
+		renderer.Present()
+
+		// Wait for the specified duration to see the window
+		if timeout > 0 { //TO DO timeout not acctually display the window (at least on the mac)
+			timeoutMillis := uint32(timeout) * 1000
+			sdl.Delay(timeoutMillis) // Delay for the specified duration
+			sdl.Quit()               // Post a quit event to close the window
+		} else {
+			// Handle events to keep the window open
+			for {
+				event := sdl.PollEvent()
+				switch event := event.(type) {
+				case *sdl.QuitEvent:
 					return
+				case *sdl.KeyboardEvent:
+					if event.Keysym.Sym == sdl.K_ESCAPE {
+						return
+					}
 				}
 			}
 		}
-	}
 
-	/*  old code for using gshow to load image from disk and display it
-	//Save the resulting image as a JPG file
-	fmt.Printf("Image saved to %s\n", outputPath)
-	saveImage(outputPath, dc.Image())
-	//let's add a pause here from the time we save the image to the time we open it
-	time.Sleep(200 * time.Millisecond)
-	if UseGsho {
-		displayImageWithGsho(outputPath, sleepDuration)
-	} */
+	}
 
 	os.Exit(0)
 }
