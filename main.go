@@ -50,6 +50,7 @@ func main() {
 		outputPath       string
 		useFramebuffer   bool
 		UseGsho          bool
+		BarOverlay       bool
 		fontSizeOverride float64 // New flag for font size override
 	)
 
@@ -70,6 +71,7 @@ func main() {
 	flag.StringVar(&outputPath, "output", homeDir+"/pixelcade/dtextout.jpg", "Output image file path")
 	flag.BoolVar(&useFramebuffer, "framebuffer", false, "Use framebuffer output instead of a JPG file") //this caaus
 	flag.BoolVar(&UseGsho, "gsho", false, "Display the image using gsho")
+	flag.BoolVar(&BarOverlay, "bar", false, "Display a bottom overlay bar with text")
 
 	// Define margin flags
 	flag.Float64Var(&lineSpacingFlag, "line-spacing", 25.0, "Line Spacing")
@@ -111,51 +113,153 @@ func main() {
 	// Create a new drawing context
 	dc := gg.NewContextForImage(bgImage)
 
-	// Set the font and color
-	err = dc.LoadFontFace(fontPath, fontSize)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dc.SetColor(fontColor)
+	if BarOverlay {
 
-	// Calculate the available width and height considering margins
-	availableWidth := float64(dc.Width()) - 2*sideMargin
-	availableHeight := float64(dc.Height()) - topMargin - bottomMargin
+		// Get the size of the existing image
+		width := dc.Width()
+		height := dc.Height()
 
-	// Set the initial font size and color
+		// Define the size of the black bar
 
-	if fontSizeOverride > 0 {
-		fontSize = fontSizeOverride
+		barHeight := int(float64(height) * 0.10) //10% of the overall height
+
+		// Set the color for the black bar
+		//dc.SetColor(color.Black)
+
+		// Draw the black bar at the bottom
+		//dc.DrawRectangle(0, float64(height-barHeight), float64(width), float64(barHeight))
+		//dc.Fill()
+
+		// now's let's add the text
+
+		maxFontSize := calculateMaxFontSize(dc, text, float64(width), float64(barHeight), fontPath)
+
+		// Load a font face with the calculated maximum font size
+		fontFace, err := gg.LoadFontFace(fontPath, maxFontSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Set the font face
+		dc.SetFontFace(fontFace)
+
+		// Measure the width and height of the text
+		textWidth, textHeight := dc.MeasureString(text)
+
+		// Set the margin for the black bar
+		margin := 15.0
+
+		// Calculate the starting X position to center the text in the image with a margin
+		textX := (float64(dc.Width()) - textWidth) / 2.0
+
+		// Calculate the starting Y position to vertically center the text relative to the black bar
+		textY := float64(dc.Height()) - (textHeight+10+margin)/2.0
+
+		// Draw the black bar background with margins on the left, right, and top
+		dc.DrawRectangle(textX-margin, textY-margin, textWidth+2*margin, textHeight+10+2*margin) // Add margins on the left, right, and top
+		dc.SetColor(color.Black)
+		dc.Fill()
+
+		// Set the color for the text again (in case the font color is overridden by the background fill)
+		dc.SetColor(color.White)
+
+		// Draw the text with horizontal centering
+		dc.DrawStringAnchored(text, textX+textWidth/2, textY, 0.5, 0.5) // Center the text both horizontally and vertically
+		/*
+			// Set the font face
+			dc.SetFontFace(fontFace)
+
+			// Set the color for the text (white in this case)
+			dc.SetColor(color.White)
+
+			// Calculate the total width of the text with spacing
+			textWidth, _ := dc.MeasureString(text)
+			totalWidth := textWidth + float64(len(text)-1)*10.0 // Assuming a fixed letter spacing of 10.0
+
+			// Calculate the starting X position to center the text in the bottom bar
+			textX := (float64(width) - totalWidth) / 2.0
+
+			// Calculate the Y position to center the text in the bottom bar with a margin
+			textY := float64(height-barHeight) + (float64(barHeight)-maxFontSize)/2.0 + maxFontSize/2.0 - maxFontSize*0.1
+
+			// Draw the entire string with fixed letter spacing
+			dc.DrawStringAnchored(text, textX+totalWidth/2, textY, 0.5, 0.5) // Adjust the anchoring as per your preference
+		*/
+		/*
+			// Set the position for the text
+			textWidth, textHeight := dc.MeasureString(text)
+			textX := (float64(width) - textWidth) / 2.0
+
+			// Define a fixed letter spacing
+			letterSpacing := 10.0 // Adjust this value to your preference
+
+			// Calculate positions for each character based on fixed letter spacing
+			charPositions := make([]gg.Point, len(text))
+			for i, char := range text {
+				charWidth, _ := dc.MeasureString(string(char))
+				charPositions[i] = gg.Point{X: textX, Y: float64(height-barHeight) + (float64(barHeight)-textHeight)/2.0 + textHeight/2.0 - textHeight*0.1}
+				textX += charWidth + letterSpacing
+			}
+
+			// Draw the entire string with fixed letter spacing
+			dc.DrawStringAnchored(text, charPositions[0].X, charPositions[0].Y, 0.5, 0.5)
+		*/
+
+		// Draw each character one by one, adjusting the X position
+		//for _, char := range text {
+		//	charWidth, _ := dc.MeasureString(string(char))
+		//	dc.DrawStringAnchored(string(char), textX, textY, 0.5, 0.5)
+		//	textX += charWidth
+		//}
+
 	} else {
-		fontSize = calculateDynamicFontSize(dc, fontPath, text, availableWidth)
-	}
 
-	err = dc.LoadFontFace(fontPath, fontSize)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dc.SetColor(fontColor)
+		// Set the font and color
+		err = dc.LoadFontFace(fontPath, fontSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dc.SetColor(fontColor)
 
-	// Split the text into paragraphs
-	paragraphs := strings.Split(text, "\n")
+		// Calculate the available width and height considering margins
+		availableWidth := float64(dc.Width()) - 2*sideMargin
+		availableHeight := float64(dc.Height()) - topMargin - bottomMargin
 
-	// Split each paragraph into lines
-	var lines []string
-	for _, paragraph := range paragraphs {
-		lines = append(lines, splitMultilineText(paragraph, dc, availableWidth)...)
-	}
+		// Set the initial font size and color
 
-	// Calculate the total text height
-	totalTextHeight := float64(len(lines)-1)*lineSpacing + calculateTotalTextHeight(lines, dc)
+		if fontSizeOverride > 0 {
+			fontSize = fontSizeOverride
+		} else {
+			fontSize = calculateDynamicFontSize(dc, fontPath, text, availableWidth)
+		}
 
-	// Calculate the starting position to center the text vertically
-	startingY := topMargin + (availableHeight-totalTextHeight)/2
+		err = dc.LoadFontFace(fontPath, fontSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dc.SetColor(fontColor)
 
-	// Draw each line at the center
-	for _, line := range lines {
-		_, h := dc.MeasureString(line)
-		dc.DrawStringAnchored(line, float64(dc.Width())/2, startingY, 0.5, 0.5)
-		startingY += h + lineSpacing
+		// Split the text into paragraphs
+		paragraphs := strings.Split(text, "\n")
+
+		// Split each paragraph into lines
+		var lines []string
+		for _, paragraph := range paragraphs {
+			lines = append(lines, splitMultilineText(paragraph, dc, availableWidth)...)
+		}
+
+		// Calculate the total text height
+		totalTextHeight := float64(len(lines)-1)*lineSpacing + calculateTotalTextHeight(lines, dc)
+
+		// Calculate the starting position to center the text vertically
+		startingY := topMargin + (availableHeight-totalTextHeight)/2
+
+		// Draw each line at the center
+		for _, line := range lines {
+			_, h := dc.MeasureString(line)
+			dc.DrawStringAnchored(line, float64(dc.Width())/2, startingY, 0.5, 0.5)
+			startingY += h + lineSpacing
+		}
 	}
 
 	//OK, our image is done, let's now display it
@@ -333,6 +437,34 @@ func calculateDynamicFontSize(dc *gg.Context, fontPath, text string, maxWidth fl
 	}
 
 	return fontSize
+}
+
+// calculateMaxFontSize calculates the maximum font size that fits the text within the specified width and height.
+func calculateMaxFontSize(dc *gg.Context, text string, maxWidth, maxHeight float64, fontPath string) float64 {
+	maxFontSize := 1.0
+	for {
+		// Load a font face with the current maximum font size
+		fontFace, err := gg.LoadFontFace(fontPath, maxFontSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Set the font face
+		dc.SetFontFace(fontFace)
+
+		// Measure the width and height of the text
+		textWidth, textHeight := dc.MeasureString(text)
+
+		// Check if the text fits within the specified width and height
+		if textWidth > maxWidth || textHeight > maxHeight {
+			break
+		}
+
+		// Increment the font size
+		maxFontSize++
+	}
+
+	return maxFontSize
 }
 
 func parseColor(colorStr string) (color.Color, error) {
