@@ -1,0 +1,9 @@
+console=serial
+verbosity=1
+bootlogo=true
+disp_mode=1080p60
+fb0_width=1920
+fb0_height=360
+rootdev=UUID=9bcd28a0-5109-4227-8666-ea72c516f639
+rootfstype=ext4
+usbstoragequirks=0x2537:0x1066:u,0x2537:0x1068:u

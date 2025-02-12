@@ -1,0 +1,28 @@
+#symbol overlay
+./dtext -symbol-overlay -symbol=/home/pi/pixelcade/lcdmarquees/usb.png -background=/home/pi/pixelcade/lcdmarquees/pixelcade.jpg
+./dtext -symbol-overlay -symbol=/home/pi/pixelcade/lcdmarquees/wifi.png -background=/home/pi/pixelcade/lcdmarquees/pixelcade.jpg
+./dtext -symbol-overlay -symbol=/home/pi/pixelcade/lcdmarquees/ethernet.png -background=/home/pi/pixelcade/lcdmarquees/pixelcade.jpg
+
+# Two symbols
+./dtext -symbol=/home/pi/pixelcade/lcdmarquees/usb.png -symbol2=/home/pi/pixelcade/lcdmarquees/wifi.png -background=/home/pi/pixelcade/lcdmarquees/pixelcade.jpg
+
+./dtext -text="Hello World"
+
+./dtext -text="Test Message" -font-color=red -font-size=48
+
+./dtext -text="First Line\nSecond Line" -font-color=blue
+
+# Full stats display
+./dtext -stats -stage=5 -lives=3 -shots=100 -hits=75 -ratio=75
+
+# Stage only
+./dtext -stats -stage=5 -stage-label="LEVEL"
+
+# Custom labels
+./dtext -stats -stage=5 -stage-label="ROUND" -lives-label="HEALTH" -lives=3 
+
+./dtext -stats -stage=5 -stage-label="ROUND" -lives-label="HEALTH" -lives=3 -hits=75 -ratio=75
+
+./dtext -overlay -text="GAME OVER"
+
+./dtext -text="Framebuffer Test" -framebuffer
